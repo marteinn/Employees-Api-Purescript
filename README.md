@@ -1,11 +1,12 @@
 # Purescript + Express Demo
 
-A example api built in Purescript and express.js using dynamodb.
+A example api built in Purescript and express.js that uses dynamodb.
 
 
 ## Getting started
-- install bower
-- install purescript
+- Install purescript
+- Install bower
+- Install packages (`bower install && npm install`)
 - `pulp run -m Main`
 - `docker-compose up`
 - `curl localhost:8080/create-local-db`
