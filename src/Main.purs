@@ -6,7 +6,7 @@ import Data.Either (Either(..))
 import Data.Array (head)
 import Effect (Effect)
 import Effect.Console (log)
-import Effect.Aff (attempt)
+import Effect.Aff (Aff, attempt)
 import Effect.Aff.Class (liftAff)
 import Effect.Exception (Error, error, message)
 import Node.Express.App (App, listenHttp, useExternal, get, post, put, delete)
@@ -19,15 +19,36 @@ import Dynamo (setConfiguration, createTable, putDoc, scanDoc, deleteDoc, queryD
 import ExpressMiddleware (jsonBodyParser)
 
 
+--Helpers
+
+scanEmployee :: forall a b. a -> Aff b
+scanEmployee = scanDoc { "TableName": "employees" }
+
+putEmployee :: forall a b. a -> Aff b
+putEmployee = putDoc { "TableName": "employees" }
+
+queryEmployee :: forall a b. a -> Aff b
+queryEmployee = queryDoc { "TableName": "employees" }
+
+queryEmployeeByEmail :: forall a b. a -> Aff b
+queryEmployeeByEmail email = queryEmployee { "KeyConditionExpression": "email = :email"
+    , "ExpressionAttributeValues": {
+    ":email": email
+    }
+}
+
+deleteEmployee :: forall a b. a -> Aff b
+deleteEmployee = deleteDoc { "TableName": "employees" }
+
+
 --Handlers
+
 indexHandler :: Handler
 indexHandler = do
-    let filters = {}
-    resp <- liftAff $ attempt $ scanDoc { "TableName": "employees" } filters
+    resp <- liftAff $ attempt $ scanEmployee {}
     case resp of
-        Right response -> sendJson $ response
+        Right employees -> sendJson $ employees
         Left err -> nextThrow $ err
-
 
 createHandler :: Handler
 createHandler = do
@@ -37,12 +58,9 @@ createHandler = do
     case [emailParam, companyParam] of
          [Just email, Just company] -> do
             let model = { "email": email, "company": company }
-            resp <- liftAff $ attempt $ putDoc { "TableName": "employees" } model
-
+            resp <- liftAff $ attempt $ putEmployee model
             case resp of
-                Right _ -> do
-                    setStatus 201
-                    sendJson $ model
+                Right _ -> sendJson $ model
                 Left err -> nextThrow $ err
          _ -> nextThrow $ error $ "Missing values"
 
@@ -51,23 +69,14 @@ deleteHandler = do
     emailParam <- getRouteParam "email"
     case emailParam of
         Just email -> do
-            employeesResp <- liftAff $ attempt $ queryDoc { "TableName": "employees" } { "KeyConditionExpression": "email = :email"
-                                                                                       , "ExpressionAttributeValues": {
-                                                                                            ":email": email
-                                                                                            }
-                                                                                        }
+            employeesResp <- liftAff $ attempt $ queryEmployeeByEmail email
             case employeesResp of
                 Right employees -> do
-                    let employeeMaybe = head $ employees
-                    case employeeMaybe of
-                         Just x -> do
-                            resp <- liftAff $ attempt $ deleteDoc { "TableName": "employees" } { email: x.email, company: x.company }
-
-                            setStatus 200
+                    case head $ employees of
+                         Just employee -> do
+                            resp <- liftAff $ attempt $ deleteEmployee { email: employee.email, company: employee.company }
                             sendJson $ {}
-
-                         Nothing -> nextThrow $ error $ "Employee list is empty"
-
+                         _ -> nextThrow $ error $ "Employee list is empty"
                 Left err -> nextThrow $ err
 
         _ -> do
@@ -79,23 +88,13 @@ detailHandler = do
     emailParam <- getRouteParam "email"
     case emailParam of
         Just email -> do
-            employeesResp <- liftAff $ attempt $ queryDoc { "TableName": "employees" } { "KeyConditionExpression": "email = :email"
-                                                                                       , "ExpressionAttributeValues": {
-                                                                                            ":email": email
-                                                                                            }
-                                                                                        }
-
+            employeesResp <- liftAff $ attempt $ queryEmployeeByEmail email
             case employeesResp of
                 Right employees -> do
-                    let employeeMaybe = head $ employees
-                    case employeeMaybe of
-                        Just x -> do
-                            setStatus 200
-                            sendJson $ x
+                    case head $ employees of
+                        Just employee -> sendJson $ employee
                         _ -> nextThrow $ error "User not found"
-
-                Left err -> nextThrow $ error "User not found"
-
+                Left err -> nextThrow $ err
         _ -> nextThrow $ error "Missing email param"
 
 createLocalDbHandler :: Handler
@@ -120,7 +119,6 @@ createLocalDbHandler = do
          Right response -> sendJson { message: "Created table." }
          Left err -> nextThrow $ err
 
-
 appSetup :: App
 appSetup = do
     useExternal jsonBodyParser
@@ -138,7 +136,6 @@ appSetup = do
     post "/" $ createHandler
     put "/:email" $ send "Update endpoint"
     get "/:email" detailHandler
-
 
 main :: Effect Server
 main = do
