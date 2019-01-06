@@ -40,15 +40,11 @@ createHandler = do
             resp <- liftAff $ attempt $ putDoc { "TableName": "employees" } model
 
             case resp of
-                Left err -> do
-                    setStatus 500
-                    sendJson { message: err }
                 Right _ -> do
                     setStatus 201
                     sendJson $ model
-         _ -> do
-            setStatus 500
-            sendJson { message: "Missing values" }
+                Left err -> nextThrow $ err
+         _ -> nextThrow $ error $ "Missing values"
 
 deleteHandler :: Handler
 deleteHandler = do
@@ -70,13 +66,9 @@ deleteHandler = do
                             setStatus 200
                             sendJson $ {}
 
-                         Nothing -> do
-                            setStatus 400
-                            sendJson {}
+                         Nothing -> nextThrow $ error $ "Employee list is empty"
 
-                Left err -> do
-                    setStatus 400
-                    sendJson {}
+                Left err -> nextThrow $ err
 
         _ -> do
             setStatus 404
@@ -100,16 +92,11 @@ detailHandler = do
                         Just x -> do
                             setStatus 200
                             sendJson $ x
-                        Nothing -> do
-                           setStatus 404
-                           sendJson {}
+                        _ -> nextThrow $ error "User not found"
 
-                Left err -> do
-                    setStatus 404
-                    sendJson {}
-        _ -> do
-            setStatus 404
-            sendJson {}
+                Left err -> nextThrow $ error "User not found"
+
+        _ -> nextThrow $ error "Missing email param"
 
 createLocalDbHandler :: Handler
 createLocalDbHandler = do
@@ -130,11 +117,8 @@ createLocalDbHandler = do
 
     resp <- liftAff $ attempt $ createTable table
     case resp of
-         Right response -> do
-            sendJson { message: "Created table." }
-         Left err -> do
-            setStatus 500
-            sendJson { message: err }
+         Right response -> sendJson { message: "Created table." }
+         Left err -> nextThrow $ err
 
 
 appSetup :: App
