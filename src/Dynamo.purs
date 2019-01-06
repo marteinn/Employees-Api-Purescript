@@ -1,34 +1,11 @@
 module Dynamo where
 
-
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Data.Either (Either)
 import Prelude
 import Debug.Trace (traceM)
-
-
-{--import Control.Monad.Eff (Eff)--}
-
-{--foreign import data AAA :: *--}
-{--foreign import createTable :: String -> (True -> Eff (fs :: FS | eff) Unit)--}
-
-{--createTable:: forall eff. (AAA -> Eff (geolookup :: GeoLookup | eff) Unit) ->--}
-                           {--Eff (geolookup :: GeoLookup | eff) Unit--}
-
-{--foreign import data TrueObj :: !--}
-{--type TrueObj :: Bool--}
-{--foreign import data TrueObj :: Type--}
-{--foreign import data DYNAMO :: Type--}
-{--foreign import data Response :: Type--}
-{--foreign import data Param :: Type--}
-{--foreign import data GeoLookup :: Type--}
-{--foreign import data Request :: Type--}
-{--foreign import data AJAX :: Type--}
-{--foreign import data Position :: # Type--}
-
-{--import Data.Foreign (Foreign, writeObject)--}
 
 foreign import setConfigurationImpl :: forall r. AWSConfig -> r
 
