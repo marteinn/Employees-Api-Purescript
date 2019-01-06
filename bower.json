@@ -1,0 +1,21 @@
+{
+  "name": "purescript-test",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-debug": "^4.1.0",
+    "purescript-aff": "^5.1.0",
+    "purescript-prelude": "^4.1.0",
+    "purescript-console": "^4.2.0",
+    "purescript-arrays": "^5.2.0",
+    "purescript-effect": "^2.0.0",
+    "purescript-express": "master"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^4.0.0"
+  }
+}
