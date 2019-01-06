@@ -8,6 +8,8 @@ A example api built in Purescript and express.js using dynamodb.
 - install purescript
 - `pulp run -m Main`
 - `docker-compose up`
+- `curl localhost:8080/create-local-db`
+- Done
 
 
 ## License

@@ -8,13 +8,14 @@ import Effect (Effect)
 import Effect.Console (log)
 import Effect.Aff (Aff, attempt)
 import Effect.Aff.Class (liftAff)
-import Effect.Exception (Error, error, message)
+import Effect.Exception (error)
 import Node.Express.App (App, listenHttp, useExternal, get, post, put, delete)
-import Node.Express.Response (send, sendJson, setStatus)
+import Node.Express.Response (sendJson, setStatus)
 import Node.Express.Handler (Handler, nextThrow)
 import Node.Express.Request (getBodyParam, getRouteParam)
 import Node.HTTP (Server)
-import Dynamo (setConfiguration, createTable, putDoc, scanDoc, deleteDoc, queryDoc)
+import Dynamo (setConfiguration, createTable, putDoc, scanDoc, deleteDoc,
+			   queryDoc)
 {--import Debug.Trace (traceM)--}
 import ExpressMiddleware (jsonBodyParser)
 
@@ -31,11 +32,13 @@ queryEmployee :: forall a b. a -> Aff b
 queryEmployee = queryDoc { "TableName": "employees" }
 
 queryEmployeeByEmail :: forall a b. a -> Aff b
-queryEmployeeByEmail email = queryEmployee { "KeyConditionExpression": "email = :email"
-    , "ExpressionAttributeValues": {
-    ":email": email
+queryEmployeeByEmail email = queryEmployee 
+    { "KeyConditionExpression": "email = :email"
+    , "ExpressionAttributeValues": 
+        {
+        ":email": email
+        }
     }
-}
 
 deleteEmployee :: forall a b. a -> Aff b
 deleteEmployee = deleteDoc { "TableName": "employees" }
@@ -74,7 +77,10 @@ deleteHandler = do
                 Right employees -> do
                     case head $ employees of
                          Just employee -> do
-                            resp <- liftAff $ attempt $ deleteEmployee { email: employee.email, company: employee.company }
+                            let model = { email: employee.email
+                                        , company: employee.company
+                                        }
+                            resp <- liftAff $ attempt $ deleteEmployee model
                             sendJson $ {}
                          _ -> nextThrow $ error $ "Employee list is empty"
                 Left err -> nextThrow $ err
@@ -131,11 +137,11 @@ appSetup = do
                                    }
 
     get "/" indexHandler
-    get "/create-local-db" createLocalDbHandler
     delete "/:email" $ deleteHandler
     post "/" $ createHandler
-    put "/:email" $ send "Update endpoint"
+    {--put "/:email" $ send "Update endpoint"--}
     get "/:email" detailHandler
+    get "/create-local-db" createLocalDbHandler
 
 main :: Effect Server
 main = do
